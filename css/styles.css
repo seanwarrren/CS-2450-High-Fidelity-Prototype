@@ -331,6 +331,39 @@ ul {
   color: #1f2937;
 }
 
+.trips-tab-bar {
+  display: inline-flex;
+  background: #f3f4f6;
+  border-radius: 50px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+.trips-tab {
+  padding: 10px 24px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.trips-tab:hover {
+  color: #374151;
+}
+
+.trips-tab.active {
+  background: #fff;
+  color: #7c3aed;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.trips-tab-content {
+  min-height: 200px;
+}
+
 .trips-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

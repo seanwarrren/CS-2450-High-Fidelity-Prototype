@@ -1,67 +1,151 @@
 document.addEventListener('DOMContentLoaded', function () {
   const trips = loadTrips();
   renderTrips(trips);
+  initTabs();
 
   document.getElementById('create-trip-btn').addEventListener('click', function () {
     openCreateTripModal(trips);
   });
 });
 
-function renderTrips(trips) {
-  const grid = document.getElementById('trips-grid');
-  grid.innerHTML = '';
+function initTabs() {
+  const tabBar = document.getElementById('trips-tab-bar');
+  const tabs = tabBar.querySelectorAll('.trips-tab');
+  const grids = {
+    previous: document.getElementById('previous-trips-grid'),
+    current: document.getElementById('current-trips-grid'),
+    upcoming: document.getElementById('upcoming-trips-grid'),
+  };
 
-  trips.forEach(function (trip, index) {
-    const card = document.createElement('div');
-    card.className = 'card trip-card';
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
 
-    const memberNames = getMemberNames(trip.memberIds);
-
-    const avatarsHTML = trip.memberIds
-      .slice(0, 5)
-      .map(function () { return createAvatarHTML('xs'); })
-      .join('');
-
-    const tripDates = formatTripDates(trip);
-    const datesHTML = tripDates
-      ? '<div class="trip-card-dates">' + SVG_ICONS.calendar + ' ' + tripDates + '</div>'
-      : '';
-
-    const fallbackColor = CARD_COLORS[index % CARD_COLORS.length];
-    const imageURL = trip.image || '';
-
-    card.innerHTML = `
-      <div class="trip-card-top" style="${!imageURL ? 'background-color:' + fallbackColor : ''}">
-        ${imageURL ? '<img src="' + imageURL + '" alt="' + trip.name + '">' : '<svg viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>'}
-        <button class="trip-delete-btn" title="Delete trip">
-          ${SVG_ICONS.trash}
-        </button>
-      </div>
-      <div class="trip-card-body">
-        <div class="trip-card-title">${trip.name}</div>
-        <div class="trip-card-members">
-          <div class="avatar-group">${avatarsHTML}</div>
-          <span class="trip-card-members-names">${memberNames.join(', ')}</span>
-        </div>
-        ${datesHTML}
-        <div class="trip-card-pins">
-          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
-          ${trip.pins.length} locations pinned
-        </div>
-      </div>
-    `;
-
-    card.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
-      e.stopPropagation();
-      openDeleteTripModal(trips, trip);
+      var selected = tab.getAttribute('data-tab');
+      Object.keys(grids).forEach(function (key) {
+        grids[key].style.display = key === selected ? '' : 'none';
+      });
     });
-
-    card.addEventListener('click', function () {
-      window.location.href = 'trip.html?id=' + trip.id;
-    });
-
-    grid.appendChild(card);
   });
+}
+
+var UNSPLASH_ACCESS_KEY = 'mQo9iIGPX7phD2LGU0X5t-QsJsVdhsDLSU-LLzKW2lQ';
+
+function fetchUnsplashImage(trip, cardElement, allTrips) {
+  var query = encodeURIComponent(trip.name);
+  fetch('https://api.unsplash.com/search/photos?query=' + query + '&per_page=1&orientation=landscape', {
+    headers: { 'Authorization': 'Client-ID ' + UNSPLASH_ACCESS_KEY }
+  })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      if (data.results && data.results.length > 0) {
+        var url = data.results[0].urls.small;
+        trip.image = url;
+        saveTrips(allTrips);
+        var topDiv = cardElement.querySelector('.trip-card-top');
+        topDiv.style.backgroundColor = '';
+        topDiv.innerHTML = '<img src="' + url + '" alt="' + trip.name + '">' +
+          '<button class="trip-delete-btn" title="Delete trip">' + SVG_ICONS.trash + '</button>';
+        topDiv.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
+          e.stopPropagation();
+          openDeleteTripModal(allTrips, trip);
+        });
+      }
+    })
+    .catch(function () {});
+}
+
+function categorizeTripByDate(trip) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!trip.startDate && !trip.endDate) return 'upcoming';
+
+  const start = trip.startDate ? new Date(trip.startDate + 'T00:00:00') : null;
+  const end = trip.endDate ? new Date(trip.endDate + 'T00:00:00') : null;
+
+  if (end && end < today) return 'previous';
+  if (start && start > today) return 'upcoming';
+  return 'current';
+}
+
+function renderTrips(trips) {
+  const grids = {
+    current: document.getElementById('current-trips-grid'),
+    upcoming: document.getElementById('upcoming-trips-grid'),
+    previous: document.getElementById('previous-trips-grid'),
+  };
+
+  const grouped = { current: [], upcoming: [], previous: [] };
+
+  trips.forEach(function (trip) {
+    const category = categorizeTripByDate(trip);
+    grouped[category].push(trip);
+  });
+
+  Object.keys(grids).forEach(function (key) {
+    grids[key].innerHTML = '';
+    grouped[key].forEach(function (trip, index) {
+      grids[key].appendChild(createTripCard(trip, index, trips));
+    });
+  });
+}
+
+function createTripCard(trip, index, allTrips) {
+  const card = document.createElement('div');
+  card.className = 'card trip-card';
+
+  const memberNames = getMemberNames(trip.memberIds);
+
+  const avatarsHTML = trip.memberIds
+    .slice(0, 5)
+    .map(function () { return createAvatarHTML('xs'); })
+    .join('');
+
+  const tripDates = formatTripDates(trip);
+  const datesHTML = tripDates
+    ? '<div class="trip-card-dates">' + SVG_ICONS.calendar + ' ' + tripDates + '</div>'
+    : '';
+
+  const fallbackColor = CARD_COLORS[index % CARD_COLORS.length];
+  const imageURL = trip.image || '';
+
+  card.innerHTML = `
+    <div class="trip-card-top" style="${!imageURL ? 'background-color:' + fallbackColor : ''}">
+      ${imageURL ? '<img src="' + imageURL + '" alt="' + trip.name + '">' : '<svg class="trip-card-placeholder" viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>'}
+      <button class="trip-delete-btn" title="Delete trip">
+        ${SVG_ICONS.trash}
+      </button>
+    </div>
+    <div class="trip-card-body">
+      <div class="trip-card-title">${trip.name}</div>
+      <div class="trip-card-members">
+        <div class="avatar-group">${avatarsHTML}</div>
+        <span class="trip-card-members-names">${memberNames.join(', ')}</span>
+      </div>
+      ${datesHTML}
+      <div class="trip-card-pins">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        ${trip.pins.length} locations pinned
+      </div>
+    </div>
+  `;
+
+  if (!trip.image) {
+    fetchUnsplashImage(trip, card, allTrips);
+  }
+
+  card.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    openDeleteTripModal(allTrips, trip);
+  });
+
+  card.addEventListener('click', function () {
+    window.location.href = 'trip.html?id=' + trip.id;
+  });
+
+  return card;
 }
 
 function openDeleteTripModal(trips, trip) {
