@@ -15,7 +15,6 @@ function renderTrips(trips) {
     const card = document.createElement('div');
     card.className = 'card trip-card';
 
-    const color = CARD_COLORS[index % CARD_COLORS.length];
     const memberNames = getMemberNames(trip.memberIds);
 
     const avatarsHTML = trip.memberIds
@@ -28,9 +27,12 @@ function renderTrips(trips) {
       ? '<div class="trip-card-dates">' + SVG_ICONS.calendar + ' ' + tripDates + '</div>'
       : '';
 
+    const fallbackColor = CARD_COLORS[index % CARD_COLORS.length];
+    const imageURL = trip.image || '';
+
     card.innerHTML = `
-      <div class="trip-card-top" style="background-color: ${color}">
-        <svg viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+      <div class="trip-card-top" style="${!imageURL ? 'background-color:' + fallbackColor : ''}">
+        ${imageURL ? '<img src="' + imageURL + '" alt="' + trip.name + '">' : '<svg viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>'}
         <button class="trip-delete-btn" title="Delete trip">
           ${SVG_ICONS.trash}
         </button>
@@ -106,6 +108,10 @@ function openCreateTripModal(trips) {
         <input type="text" class="form-input" id="trip-name-input" placeholder="e.g., Barcelona Trip" required>
       </div>
       <div class="form-group">
+        <label class="form-label">Cover Image URL</label>
+        <input type="url" class="form-input" id="trip-image-input" placeholder="Paste an image URL (optional)">
+      </div>
+      <div class="form-group">
         <label class="form-label">Description</label>
         <textarea class="form-input" id="trip-desc-input" placeholder="Optional description" rows="3"></textarea>
       </div>
@@ -148,6 +154,7 @@ function openCreateTripModal(trips) {
 
   modal.querySelector('#submit-trip-btn').addEventListener('click', function () {
     const name = modal.querySelector('#trip-name-input').value.trim();
+    const imageUrl = modal.querySelector('#trip-image-input').value.trim();
     const desc = modal.querySelector('#trip-desc-input').value.trim();
     const startDate = modal.querySelector('#trip-start-date').value;
     const endDate = modal.querySelector('#trip-end-date').value;
@@ -170,6 +177,7 @@ function openCreateTripModal(trips) {
     const newTrip = {
       id: getNextId(trips),
       name: name,
+      image: imageUrl || '',
       description: desc,
       startDate: startDate || '',
       endDate: endDate || '',

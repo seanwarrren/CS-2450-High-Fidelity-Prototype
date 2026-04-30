@@ -342,14 +342,21 @@ ul {
 }
 
 .trip-card-top {
-  height: 120px;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
-.trip-card-top svg {
+.trip-card-top img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trip-card-top > svg {
   width: 48px;
   height: 48px;
   opacity: 0.4;
@@ -1071,13 +1078,14 @@ body:has(.trip-page) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s, background 0.2s, transform 0.2s;
   z-index: 2;
+  backdrop-filter: blur(4px);
 }
 
 .trip-delete-btn svg {
