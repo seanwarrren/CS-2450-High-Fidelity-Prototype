@@ -30,9 +30,10 @@ function initTabs() {
   });
 }
 
-var UNSPLASH_ACCESS_KEY = 'mQo9iIGPX7phD2LGU0X5t-QsJsVdhsDLSU-LLzKW2lQ';
-
 function fetchUnsplashImage(trip, cardElement, allTrips) {
+  if (typeof UNSPLASH_ACCESS_KEY === 'undefined' || UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY_HERE') {
+    return;
+  }
   var query = encodeURIComponent(trip.name);
   fetch('https://api.unsplash.com/search/photos?query=' + query + '&per_page=1&orientation=landscape', {
     headers: { 'Authorization': 'Client-ID ' + UNSPLASH_ACCESS_KEY }
