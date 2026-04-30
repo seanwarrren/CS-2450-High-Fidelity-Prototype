@@ -26,6 +26,9 @@ function renderTrips(trips) {
     card.innerHTML = `
       <div class="trip-card-top" style="background-color: ${color}">
         <svg viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        <button class="trip-delete-btn" title="Delete trip">
+          ${SVG_ICONS.trash}
+        </button>
       </div>
       <div class="trip-card-body">
         <div class="trip-card-title">${trip.name}</div>
@@ -40,11 +43,42 @@ function renderTrips(trips) {
       </div>
     `;
 
+    card.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      openDeleteTripModal(trips, trip);
+    });
+
     card.addEventListener('click', function () {
       window.location.href = 'trip.html?id=' + trip.id;
     });
 
     grid.appendChild(card);
+  });
+}
+
+function openDeleteTripModal(trips, trip) {
+  const bodyHTML = '<p class="confirm-message">Are you sure you want to delete <strong>' + trip.name + '</strong>? All pins and comments will be permanently removed.</p>';
+  const footerHTML = `
+    <div class="confirm-actions">
+      <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirm-yes-btn">Delete</button>
+    </div>
+  `;
+
+  const modal = openModal('Delete Trip', bodyHTML, footerHTML);
+
+  modal.querySelector('#confirm-cancel-btn').addEventListener('click', function () {
+    closeModal();
+  });
+
+  modal.querySelector('#confirm-yes-btn').addEventListener('click', function () {
+    const idx = trips.findIndex(function (t) { return t.id === trip.id; });
+    if (idx !== -1) {
+      trips.splice(idx, 1);
+      saveTrips(trips);
+      renderTrips(trips);
+    }
+    closeModal();
   });
 }
 

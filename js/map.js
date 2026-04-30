@@ -64,6 +64,8 @@ function renderSidebarPins() {
     item.className = 'pin-list-item';
     item.dataset.pinId = pin.id;
 
+    const commentCount = (pin.comments || []).length;
+
     item.innerHTML = `
       <div class="pin-list-icon">
         ${SVG_ICONS.pin}
@@ -73,10 +75,18 @@ function renderSidebarPins() {
         <div class="pin-list-type">${pin.type}</div>
         <div class="pin-list-meta">
           <span>${SVG_ICONS.heart} ${pin.votes}</span>
-          <span>${SVG_ICONS.comment}</span>
+          <span>${SVG_ICONS.comment} ${commentCount}</span>
         </div>
       </div>
+      <button class="pin-delete-btn" title="Delete pin">
+        ${SVG_ICONS.trash}
+      </button>
     `;
+
+    item.querySelector('.pin-delete-btn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      deletePin(pin.id);
+    });
 
     item.addEventListener('click', function () {
       highlightPin(pin.id);
@@ -113,6 +123,23 @@ function renderMapPins() {
   });
 }
 
+function deletePin(pinId) {
+  const pin = currentTrip.pins.find(function (p) { return p.id === pinId; });
+  if (!pin) return;
+
+  openConfirmModal(
+    'Delete Pin',
+    'Are you sure you want to delete <strong>' + pin.name + '</strong>? This cannot be undone.',
+    function () {
+      currentTrip.pins = currentTrip.pins.filter(function (p) { return p.id !== pinId; });
+      saveTrips(allTrips);
+      closePinInfo();
+      renderSidebarPins();
+      renderMapPins();
+    }
+  );
+}
+
 function showPinInfo(pin, markerEl) {
   closePinInfo();
 
@@ -136,21 +163,32 @@ function showPinInfo(pin, markerEl) {
 
   const votedClass = pin.voted ? ' btn-disabled' : '';
   const heartIcon = pin.voted ? SVG_ICONS.heartFilled : SVG_ICONS.heart;
+  const commentCount = (pin.comments || []).length;
 
   card.innerHTML = `
-    <div class="pin-info-card-name">${pin.name}</div>
-    <div class="pin-info-card-type">${pin.type}</div>
-    <div class="pin-info-card-comment">${pin.comment || 'No comment yet'}</div>
+    <div class="pin-info-card-header">
+      <div>
+        <div class="pin-info-card-name">${pin.name}</div>
+        <div class="pin-info-card-type">${pin.type}</div>
+      </div>
+      <button class="pin-info-delete-btn" title="Delete pin">
+        ${SVG_ICONS.trash}
+      </button>
+    </div>
     <div class="pin-info-card-actions">
       <button class="btn btn-gradient-pink vote-btn${votedClass}" id="vote-btn">
         ${heartIcon}
         <span id="vote-count">${pin.votes}</span>
       </button>
       <button class="btn btn-secondary comment-btn" id="comment-btn">
-        ${SVG_ICONS.comment} Comment
+        ${SVG_ICONS.comment} Comments${commentCount ? ' (' + commentCount + ')' : ''}
       </button>
     </div>
   `;
+
+  card.querySelector('.pin-info-delete-btn').addEventListener('click', function () {
+    deletePin(pin.id);
+  });
 
   const voteBtn = card.querySelector('#vote-btn');
   voteBtn.addEventListener('click', function () {
@@ -166,15 +204,118 @@ function showPinInfo(pin, markerEl) {
 
   const commentBtn = card.querySelector('#comment-btn');
   commentBtn.addEventListener('click', function () {
-    const newComment = prompt('Add a comment:', pin.comment || '');
-    if (newComment !== null) {
-      pin.comment = newComment;
-      card.querySelector('.pin-info-card-comment').textContent = newComment || 'No comment yet';
-      saveTrips(allTrips);
-    }
+    openCommentsModal(pin);
   });
 
   document.getElementById('map-area').appendChild(card);
+}
+
+function openCommentsModal(pin) {
+  if (!Array.isArray(pin.comments)) {
+    pin.comments = [];
+  }
+
+  function buildCommentsHTML(comments) {
+    if (comments.length === 0) {
+      return '<div class="comments-empty">No comments yet. Be the first to comment!</div>';
+    }
+    return comments.map(function (c) {
+      return `
+        <div class="comment-item" data-comment-id="${c.id}">
+          <div class="comment-avatar">${createAvatarHTML('xs')}</div>
+          <div class="comment-content">
+            <div class="comment-author">${c.author || 'You'}</div>
+            <div class="comment-text">${c.text}</div>
+          </div>
+          <button class="comment-delete-btn" title="Delete comment" data-id="${c.id}">
+            ${SVG_ICONS.trash}
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const bodyHTML = `
+    <div class="comments-list" id="comments-list">
+      ${buildCommentsHTML(pin.comments)}
+    </div>
+    <div class="comment-input-row">
+      <input type="text" class="form-input" id="comment-text-input" placeholder="Write a comment...">
+      <button type="button" class="btn btn-gradient-pink" id="submit-comment-btn">Post</button>
+    </div>
+  `;
+
+  const modal = openModal('Comments — ' + pin.name, bodyHTML, '');
+
+  function refreshComments() {
+    const listEl = modal.querySelector('#comments-list');
+    listEl.innerHTML = buildCommentsHTML(pin.comments);
+    attachDeleteHandlers();
+  }
+
+  function attachDeleteHandlers() {
+    modal.querySelectorAll('.comment-delete-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const commentId = parseInt(btn.dataset.id);
+        pin.comments = pin.comments.filter(function (c) { return c.id !== commentId; });
+        saveTrips(allTrips);
+        renderSidebarPins();
+        refreshComments();
+      });
+    });
+  }
+
+  attachDeleteHandlers();
+
+  function submitComment() {
+    const input = modal.querySelector('#comment-text-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    pin.comments.push({
+      id: getNextId(pin.comments),
+      text: text,
+      author: 'You',
+    });
+
+    saveTrips(allTrips);
+    renderSidebarPins();
+    input.value = '';
+    refreshComments();
+
+    var listEl = modal.querySelector('#comments-list');
+    listEl.scrollTop = listEl.scrollHeight;
+  }
+
+  modal.querySelector('#submit-comment-btn').addEventListener('click', submitComment);
+
+  modal.querySelector('#comment-text-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitComment();
+    }
+  });
+}
+
+function openConfirmModal(title, message, onConfirm) {
+  const bodyHTML = `<p class="confirm-message">${message}</p>`;
+  const footerHTML = `
+    <div class="confirm-actions">
+      <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirm-yes-btn">Delete</button>
+    </div>
+  `;
+
+  const modal = openModal(title, bodyHTML, footerHTML);
+
+  modal.querySelector('#confirm-cancel-btn').addEventListener('click', function () {
+    closeModal();
+  });
+
+  modal.querySelector('#confirm-yes-btn').addEventListener('click', function () {
+    closeModal();
+    onConfirm();
+  });
 }
 
 function closePinInfo() {
@@ -243,11 +384,17 @@ function openAddPinModal(prefillName) {
       return;
     }
 
+    const comments = [];
+    if (comment) {
+      comments.push({ id: 1, text: comment, author: 'You' });
+    }
+
     const newPin = {
       id: getNextId(currentTrip.pins),
       name: name,
       type: selectedType,
       comment: comment,
+      comments: comments,
       votes: 0,
       voted: false,
       x: 20 + Math.random() * 60,

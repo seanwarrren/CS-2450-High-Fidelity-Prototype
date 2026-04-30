@@ -927,19 +927,12 @@ textarea.form-input {
 .pin-info-card-type {
   font-size: 0.8rem;
   color: #9ca3af;
-  margin-bottom: 8px;
-}
-
-.pin-info-card-comment {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-bottom: 14px;
-  line-height: 1.4;
 }
 
 .pin-info-card-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pin-info-card-actions .btn {
@@ -973,6 +966,232 @@ body:has(.trip-page) {
   overflow: hidden;
   min-height: unset;
   height: 100vh;
+}
+
+/* ========== Delete / Danger Button ========== */
+
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ========== Confirm Modal ========== */
+
+.confirm-message {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ========== Trip Card Delete Button ========== */
+
+.trip-card-top {
+  position: relative;
+}
+
+.trip-delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s;
+  z-index: 2;
+}
+
+.trip-delete-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #ef4444;
+}
+
+.trip-delete-btn:hover {
+  background: #fee2e2;
+  transform: scale(1.1);
+}
+
+.trip-card:hover .trip-delete-btn {
+  opacity: 1;
+}
+
+/* ========== Pin Sidebar Delete Button ========== */
+
+.pin-list-item {
+  position: relative;
+}
+
+.pin-delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  align-self: center;
+}
+
+.pin-delete-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: #ef4444;
+}
+
+.pin-delete-btn:hover {
+  background: #fee2e2;
+}
+
+.pin-list-item:hover .pin-delete-btn {
+  opacity: 1;
+}
+
+/* ========== Pin Info Card Header ========== */
+
+.pin-info-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.pin-info-delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.pin-info-delete-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: #ef4444;
+}
+
+.pin-info-delete-btn:hover {
+  background: #fee2e2;
+}
+
+/* ========== Comments Modal ========== */
+
+.comments-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comments-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  padding: 32px 16px;
+}
+
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+
+.comment-item:hover {
+  background: #fdf2f8;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.comment-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-author {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 2px;
+}
+
+.comment-text {
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.comment-delete-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  align-self: center;
+}
+
+.comment-delete-btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: #ef4444;
+}
+
+.comment-delete-btn:hover {
+  background: #fee2e2;
+}
+
+.comment-item:hover .comment-delete-btn {
+  opacity: 1;
+}
+
+.comment-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment-input-row .form-input {
+  flex: 1;
+}
+
+.comment-input-row .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ========== Animations ========== */
