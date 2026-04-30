@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trip - TripPinner</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="trip-page">
+    <header class="trip-header">
+      <a href="index.html" class="back-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </a>
+      <div class="trip-header-info">
+        <div class="trip-header-name" id="trip-name">Trip</div>
+        <div class="trip-header-members">
+          <div class="avatar-group" id="trip-member-avatars"></div>
+          <span class="trip-header-members-names" id="trip-member-names"></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="trip-layout">
+      <aside class="sidebar">
+        <h3 class="sidebar-section-title">Trip Details</h3>
+        <button class="btn btn-gradient btn-full" id="add-pin-btn">+ Add Pin</button>
+
+        <div class="search-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="search-input" placeholder="Search locations...">
+          <div class="search-dropdown" id="search-dropdown"></div>
+        </div>
+
+        <h3 class="sidebar-section-title" id="pinned-count">Pinned Locations (0)</h3>
+        <div class="pin-list" id="pin-list"></div>
+      </aside>
+
+      <div class="map-area" id="map-area"></div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/map.js"></script>
+</body>
+</html>
