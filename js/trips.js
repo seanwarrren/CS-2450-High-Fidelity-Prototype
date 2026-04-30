@@ -178,11 +178,11 @@ function openDeleteTripModal(trips, trip) {
 function openCreateTripModal(trips) {
   const friendsListHTML = FRIENDS.map(function (friend) {
     return `
-      <label class="friend-select-item" data-friend-id="${friend.id}">
+      <div class="friend-select-item" data-friend-id="${friend.id}">
         ${createAvatarHTML('sm')}
         <span class="friend-select-name">${friend.name}</span>
         <input type="checkbox" name="friends" value="${friend.id}">
-      </label>
+      </div>
     `;
   }).join('');
 
