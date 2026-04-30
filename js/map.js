@@ -50,6 +50,14 @@ function renderTripHeader() {
 
   const names = getMemberNames(currentTrip.memberIds);
   document.getElementById('trip-member-names').textContent = names.join(', ');
+
+  const datesEl = document.getElementById('trip-dates');
+  const tripDates = formatTripDates(currentTrip);
+  if (tripDates) {
+    datesEl.innerHTML = SVG_ICONS.calendar + ' ' + tripDates;
+  } else {
+    datesEl.textContent = '';
+  }
 }
 
 function renderSidebarPins() {

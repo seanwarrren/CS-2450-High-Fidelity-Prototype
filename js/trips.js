@@ -23,6 +23,11 @@ function renderTrips(trips) {
       .map(function () { return createAvatarHTML('xs'); })
       .join('');
 
+    const tripDates = formatTripDates(trip);
+    const datesHTML = tripDates
+      ? '<div class="trip-card-dates">' + SVG_ICONS.calendar + ' ' + tripDates + '</div>'
+      : '';
+
     card.innerHTML = `
       <div class="trip-card-top" style="background-color: ${color}">
         <svg viewBox="0 0 24 24" fill="#9ca3af"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
@@ -36,6 +41,7 @@ function renderTrips(trips) {
           <div class="avatar-group">${avatarsHTML}</div>
           <span class="trip-card-members-names">${memberNames.join(', ')}</span>
         </div>
+        ${datesHTML}
         <div class="trip-card-pins">
           <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
           ${trip.pins.length} locations pinned
@@ -104,6 +110,20 @@ function openCreateTripModal(trips) {
         <textarea class="form-input" id="trip-desc-input" placeholder="Optional description" rows="3"></textarea>
       </div>
       <div class="form-group">
+        <label class="form-label">Trip Dates</label>
+        <div class="date-range-row">
+          <div class="date-field">
+            <label class="date-field-label">Start</label>
+            <input type="date" class="form-input" id="trip-start-date">
+          </div>
+          <span class="date-range-sep">–</span>
+          <div class="date-field">
+            <label class="date-field-label">End</label>
+            <input type="date" class="form-input" id="trip-end-date">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label">Select Friends</label>
         <div class="friend-select-list">${friendsListHTML}</div>
       </div>
@@ -129,9 +149,16 @@ function openCreateTripModal(trips) {
   modal.querySelector('#submit-trip-btn').addEventListener('click', function () {
     const name = modal.querySelector('#trip-name-input').value.trim();
     const desc = modal.querySelector('#trip-desc-input').value.trim();
+    const startDate = modal.querySelector('#trip-start-date').value;
+    const endDate = modal.querySelector('#trip-end-date').value;
 
     if (!name) {
       modal.querySelector('#trip-name-input').focus();
+      return;
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      modal.querySelector('#trip-end-date').focus();
       return;
     }
 
@@ -144,6 +171,8 @@ function openCreateTripModal(trips) {
       id: getNextId(trips),
       name: name,
       description: desc,
+      startDate: startDate || '',
+      endDate: endDate || '',
       memberIds: selectedFriends,
       pins: [],
     };
