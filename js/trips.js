@@ -63,9 +63,20 @@ function renderTrips(trips) {
 
   Object.keys(grids).forEach(function (key) {
     grids[key].innerHTML = '';
-    grouped[key].forEach(function (trip, index) {
-      grids[key].appendChild(createTripCard(trip, index, trips));
-    });
+    if (grouped[key].length === 0) {
+      grids[key].innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">${SVG_ICONS.pin}</div>
+          <p class="empty-state-title">No trips yet</p>
+          <p class="empty-state-text">Create your first trip to start pinning locations!</p>
+          <button class="btn btn-gradient empty-state-btn" onclick="document.getElementById('create-trip-btn').click()">+ Create Trip</button>
+        </div>
+      `;
+    } else {
+      grouped[key].forEach(function (trip, index) {
+        grids[key].appendChild(createTripCard(trip, index, trips));
+      });
+    }
   });
 }
 
