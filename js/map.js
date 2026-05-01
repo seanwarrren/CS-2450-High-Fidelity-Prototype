@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', function () {
     openAddPinModal();
   });
 
+  document.getElementById('edit-trip-btn').innerHTML = SVG_ICONS.edit;
+  document.getElementById('edit-trip-btn').addEventListener('click', function () {
+    openEditTripModal();
+  });
+
   document.getElementById('map-area').addEventListener('click', function (e) {
     if (!e.target.closest('.map-pin') && !e.target.closest('.pin-info-card')) {
       closePinInfo();
@@ -457,5 +462,135 @@ function initSearch() {
     setTimeout(function () {
       dropdown.classList.remove('visible');
     }, 200);
+  });
+}
+
+function openEditTripModal() {
+  const friendsListHTML = FRIENDS.map(function (friend) {
+    const checked = currentTrip.memberIds.indexOf(friend.id) !== -1;
+    return `
+      <div class="friend-select-item${checked ? ' selected' : ''}" data-friend-id="${friend.id}">
+        ${createAvatarHTML('sm')}
+        <span class="friend-select-name">${friend.name}</span>
+        <input type="checkbox" name="friends" value="${friend.id}"${checked ? ' checked' : ''}>
+      </div>
+    `;
+  }).join('');
+
+  const bodyHTML = `
+    <form id="edit-trip-form">
+      <div class="form-group">
+        <label class="form-label">Trip Name <span class="required-star">*</span></label>
+        <input type="text" class="form-input" id="edit-trip-name" value="${currentTrip.name}" required>
+        <span class="form-error" id="edit-name-error">Please enter a trip name</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cover Image URL (optional)</label>
+        <input type="url" class="form-input" id="edit-trip-image" value="${currentTrip.image || ''}" placeholder="https://example.com/photo.jpg">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="edit-trip-desc" rows="3">${currentTrip.description || ''}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Trip Dates</label>
+        <div class="date-range-row">
+          <div class="date-field">
+            <label class="date-field-label">Start</label>
+            <input type="date" class="form-input" id="edit-trip-start" value="${currentTrip.startDate || ''}">
+          </div>
+          <span class="date-range-sep">–</span>
+          <div class="date-field">
+            <label class="date-field-label">End</label>
+            <input type="date" class="form-input" id="edit-trip-end" value="${currentTrip.endDate || ''}">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Friends <span class="required-star">*</span></label>
+        <div class="friend-select-list">${friendsListHTML}</div>
+        <span class="form-error" id="edit-friends-error">Please select at least one friend</span>
+      </div>
+    </form>
+  `;
+
+  const footerHTML = `
+    <button type="button" class="btn btn-gradient-pink btn-full" id="save-trip-btn">Save Changes</button>
+  `;
+
+  const modal = openModal('Edit Trip', bodyHTML, footerHTML);
+
+  var nameInput = modal.querySelector('#edit-trip-name');
+  var nameError = modal.querySelector('#edit-name-error');
+  var friendsError = modal.querySelector('#edit-friends-error');
+
+  nameInput.addEventListener('input', function () {
+    if (nameInput.value.trim()) {
+      nameError.classList.remove('visible');
+      nameInput.classList.remove('form-input-error');
+    }
+  });
+
+  const items = modal.querySelectorAll('.friend-select-item');
+  items.forEach(function (item) {
+    item.addEventListener('click', function (e) {
+      if (e.target.tagName === 'INPUT') return;
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      checkbox.checked = !checkbox.checked;
+      item.classList.toggle('selected', checkbox.checked);
+      if (modal.querySelector('input[name="friends"]:checked')) {
+        friendsError.classList.remove('visible');
+      }
+    });
+  });
+
+  modal.querySelector('#save-trip-btn').addEventListener('click', function () {
+    const name = nameInput.value.trim();
+    const image = modal.querySelector('#edit-trip-image').value.trim();
+    const desc = modal.querySelector('#edit-trip-desc').value.trim();
+    const startDate = modal.querySelector('#edit-trip-start').value;
+    const endDate = modal.querySelector('#edit-trip-end').value;
+
+    const selectedFriends = [];
+    modal.querySelectorAll('input[name="friends"]:checked').forEach(function (cb) {
+      selectedFriends.push(parseInt(cb.value));
+    });
+
+    var hasError = false;
+
+    if (!name) {
+      nameError.classList.add('visible');
+      nameInput.classList.add('form-input-error');
+      nameInput.focus();
+      hasError = true;
+    } else {
+      nameError.classList.remove('visible');
+      nameInput.classList.remove('form-input-error');
+    }
+
+    if (selectedFriends.length === 0) {
+      friendsError.classList.add('visible');
+      hasError = true;
+    } else {
+      friendsError.classList.remove('visible');
+    }
+
+    if (hasError) return;
+
+    if (startDate && endDate && startDate > endDate) {
+      modal.querySelector('#edit-trip-end').focus();
+      return;
+    }
+
+    currentTrip.name = name;
+    currentTrip.image = image || '';
+    currentTrip.description = desc;
+    currentTrip.startDate = startDate || '';
+    currentTrip.endDate = endDate || '';
+    currentTrip.memberIds = selectedFriends;
+
+    saveTrips(allTrips);
+    renderTripHeader();
+    closeModal();
   });
 }

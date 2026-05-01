@@ -779,6 +779,29 @@ textarea.form-input {
   flex-shrink: 0;
 }
 
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+  color: #9333ea;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .trip-header::after {
   content: '';
   position: absolute;
@@ -792,6 +815,8 @@ textarea.form-input {
 .trip-header-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .trip-header-name {
