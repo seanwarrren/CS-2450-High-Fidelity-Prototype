@@ -553,6 +553,31 @@ textarea.form-input {
   min-height: 80px;
 }
 
+.form-input-error {
+  border-color: #ef4444;
+}
+
+.form-input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.required-star {
+  color: #ef4444;
+}
+
+.form-error {
+  display: none;
+  font-size: 0.8rem;
+  color: #ef4444;
+  margin-top: 6px;
+}
+
+.form-error.visible {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+
 /* ========== Image Preview ========== */
 
 .image-preview {

@@ -161,8 +161,9 @@ function openCreateTripModal(trips) {
   const bodyHTML = `
     <form id="create-trip-form">
       <div class="form-group">
-        <label class="form-label">Trip Name</label>
+        <label class="form-label">Trip Name <span class="required-star">*</span></label>
         <input type="text" class="form-input" id="trip-name-input" placeholder="e.g., Barcelona Trip" required>
+        <span class="form-error" id="trip-name-error">Please enter a trip name</span>
       </div>
       <div class="form-group">
         <label class="form-label">Cover Image URL (optional)</label>
@@ -188,8 +189,9 @@ function openCreateTripModal(trips) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Select Friends</label>
+        <label class="form-label">Select Friends <span class="required-star">*</span></label>
         <div class="friend-select-list">${friendsListHTML}</div>
+        <span class="form-error" id="trip-friends-error">Please select at least one friend</span>
       </div>
     </form>
   `;
@@ -235,30 +237,60 @@ function openCreateTripModal(trips) {
       const checkbox = item.querySelector('input[type="checkbox"]');
       checkbox.checked = !checkbox.checked;
       item.classList.toggle('selected', checkbox.checked);
+      if (modal.querySelector('input[name="friends"]:checked')) {
+        friendsError.classList.remove('visible');
+      }
     });
   });
 
+  var nameInput = modal.querySelector('#trip-name-input');
+  var nameError = modal.querySelector('#trip-name-error');
+  var friendsError = modal.querySelector('#trip-friends-error');
+
+  nameInput.addEventListener('input', function () {
+    if (nameInput.value.trim()) {
+      nameError.classList.remove('visible');
+      nameInput.classList.remove('form-input-error');
+    }
+  });
+
   modal.querySelector('#submit-trip-btn').addEventListener('click', function () {
-    const name = modal.querySelector('#trip-name-input').value.trim();
+    const name = nameInput.value.trim();
     const imageUrl = modal.querySelector('#trip-image-input').value.trim();
     const desc = modal.querySelector('#trip-desc-input').value.trim();
     const startDate = modal.querySelector('#trip-start-date').value;
     const endDate = modal.querySelector('#trip-end-date').value;
 
+    const selectedFriends = [];
+    modal.querySelectorAll('input[name="friends"]:checked').forEach(function (cb) {
+      selectedFriends.push(parseInt(cb.value));
+    });
+
+    var hasError = false;
+
     if (!name) {
-      modal.querySelector('#trip-name-input').focus();
-      return;
+      nameError.classList.add('visible');
+      nameInput.classList.add('form-input-error');
+      nameInput.focus();
+      hasError = true;
+    } else {
+      nameError.classList.remove('visible');
+      nameInput.classList.remove('form-input-error');
     }
+
+    if (selectedFriends.length === 0) {
+      friendsError.classList.add('visible');
+      hasError = true;
+    } else {
+      friendsError.classList.remove('visible');
+    }
+
+    if (hasError) return;
 
     if (startDate && endDate && startDate > endDate) {
       modal.querySelector('#trip-end-date').focus();
       return;
     }
-
-    const selectedFriends = [];
-    modal.querySelectorAll('input[name="friends"]:checked').forEach(function (cb) {
-      selectedFriends.push(parseInt(cb.value));
-    });
 
     const newTrip = {
       id: getNextId(trips),
