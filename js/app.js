@@ -24,58 +24,24 @@ const FRIENDS = [
   { id: 5, name: 'Chris', status: 'offline' },
 ];
 
-const DEFAULT_TRIPS = [
-  {
-    id: 1,
-    name: 'Barcelona Trip',
-    description: 'Exploring the beautiful city of Barcelona',
-    startDate: '2026-06-10',
-    endDate: '2026-06-18',
-    memberIds: [1, 2, 3, 4],
-    pins: [
-      { id: 1, name: 'Barcelona', type: 'City', comment: 'Amazing city!', votes: 3, voted: false, x: 40, y: 30 },
-      { id: 2, name: 'Sagrada Familia', type: 'Landmark', comment: 'Must visit this masterpiece', votes: 4, voted: false, x: 45, y: 48 },
-      { id: 3, name: 'La Rambla', type: 'Activity', comment: 'Great street for walking', votes: 2, voted: false, x: 42, y: 55 },
-      { id: 4, name: 'Barcelona Beach', type: 'Activity', comment: 'Beautiful beach', votes: 2, voted: false, x: 58, y: 55 },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Tokyo Adventure',
-    description: 'Discovering Japan',
-    startDate: '2026-08-01',
-    endDate: '2026-08-12',
-    memberIds: [1, 5],
-    pins: [
-      { id: 1, name: 'Shibuya Crossing', type: 'Landmark', comment: 'Iconic spot', votes: 5, voted: false, x: 50, y: 40 },
-      { id: 2, name: 'Tsukiji Market', type: 'Restaurant', comment: 'Fresh sushi', votes: 3, voted: false, x: 60, y: 55 },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Paris Weekend',
-    description: 'A romantic getaway',
-    startDate: '2026-09-19',
-    endDate: '2026-09-21',
-    memberIds: [2, 3],
-    pins: [
-      { id: 1, name: 'Eiffel Tower', type: 'Landmark', comment: 'Classic Paris', votes: 6, voted: false, x: 45, y: 35 },
-      { id: 2, name: 'Louvre Museum', type: 'Activity', comment: 'Art lovers paradise', votes: 4, voted: false, x: 55, y: 50 },
-    ],
-  },
-];
+const DEFAULT_TRIPS = [];
 
 function loadTrips() {
+  if (!localStorage.getItem('trippinner_cleared')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem('trippinner_cleared', '1');
+  }
+
   let trips;
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
       trips = JSON.parse(stored);
     } catch (e) {
-      trips = JSON.parse(JSON.stringify(DEFAULT_TRIPS));
+      trips = [];
     }
   } else {
-    trips = JSON.parse(JSON.stringify(DEFAULT_TRIPS));
+    trips = [];
   }
   migrateComments(trips);
   return trips;

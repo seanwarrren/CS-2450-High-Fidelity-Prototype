@@ -12,6 +12,7 @@ function initTabs() {
   const tabBar = document.getElementById('trips-tab-bar');
   const tabs = tabBar.querySelectorAll('.trips-tab');
   const grids = {
+    all: document.getElementById('all-trips-grid'),
     previous: document.getElementById('previous-trips-grid'),
     current: document.getElementById('current-trips-grid'),
     upcoming: document.getElementById('upcoming-trips-grid'),
@@ -46,14 +47,16 @@ function categorizeTripByDate(trip) {
 
 function renderTrips(trips) {
   const grids = {
+    all: document.getElementById('all-trips-grid'),
     current: document.getElementById('current-trips-grid'),
     upcoming: document.getElementById('upcoming-trips-grid'),
     previous: document.getElementById('previous-trips-grid'),
   };
 
-  const grouped = { current: [], upcoming: [], previous: [] };
+  const grouped = { all: [], current: [], upcoming: [], previous: [] };
 
   trips.forEach(function (trip) {
+    grouped.all.push(trip);
     const category = categorizeTripByDate(trip);
     grouped[category].push(trip);
   });

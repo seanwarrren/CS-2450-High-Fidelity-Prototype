@@ -23,14 +23,16 @@
 
   <main class="page-container">
     <div class="trips-tab-bar" id="trips-tab-bar">
+      <button class="trips-tab active" data-tab="all">All</button>
       <button class="trips-tab" data-tab="previous">Previous</button>
-      <button class="trips-tab active" data-tab="current">Current</button>
+      <button class="trips-tab" data-tab="current">Current</button>
       <button class="trips-tab" data-tab="upcoming">Upcoming</button>
     </div>
 
     <div class="trips-tab-content" id="trips-tab-content">
+      <div class="trips-grid" id="all-trips-grid"></div>
       <div class="trips-grid" id="previous-trips-grid" style="display: none;"></div>
-      <div class="trips-grid" id="current-trips-grid"></div>
+      <div class="trips-grid" id="current-trips-grid" style="display: none;"></div>
       <div class="trips-grid" id="upcoming-trips-grid" style="display: none;"></div>
     </div>
   </main>
