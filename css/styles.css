@@ -1040,53 +1040,7 @@ textarea.form-input {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(90deg, rgba(209, 213, 219, 0.3) 1px, transparent 1px),
-    linear-gradient(rgba(209, 213, 219, 0.3) 1px, transparent 1px),
-    radial-gradient(ellipse at 20% 20%, rgba(134, 239, 172, 0.25) 0%, transparent 50%),
-    radial-gradient(ellipse at 75% 35%, rgba(253, 230, 138, 0.2) 0%, transparent 40%),
-    radial-gradient(ellipse at 70% 75%, rgba(147, 197, 253, 0.25) 0%, transparent 50%),
-    linear-gradient(135deg, #f0f9ff, #eff6ff, #f5f3ff);
-  background-size:
-    60px 60px,
-    60px 60px,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%;
-}
-
-/* ========== Map Pins ========== */
-
-.map-pin {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  z-index: 10;
-  transition: transform 0.2s;
-}
-
-.map-pin:hover {
-  transform: translate(-50%, -50%) scale(1.15);
-  z-index: 20;
-}
-
-.map-pin-marker {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ec4899, #f472b6);
-  border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.map-pin-marker svg {
-  width: 18px;
-  height: 18px;
-  fill: white;
+  background: #e5e7eb;
 }
 
 /* ========== Pin Info Card ========== */
@@ -1100,6 +1054,7 @@ textarea.form-input {
   width: 260px;
   padding: 20px;
   animation: slideUp 0.2s ease;
+  font-family: 'Poppins', sans-serif;
 }
 
 .pin-info-card-name {

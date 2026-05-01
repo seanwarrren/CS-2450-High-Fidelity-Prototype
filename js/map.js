@@ -1,12 +1,28 @@
 let currentTrip = null;
 let allTrips = [];
+let map = null;
+let geocoder = null;
+let mapMarkers = [];
+let activeInfoCard = null;
 
-const SEARCH_SUGGESTIONS = [
-  'Barcelona',
-  'Barcelona Cathedral',
-  'Barcelona Beach',
-  'San Jose, CA',
-];
+function loadGoogleMaps() {
+  return new Promise(function (resolve, reject) {
+    if (window.google && window.google.maps) {
+      resolve();
+      return;
+    }
+
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&libraries=geocoding';
+    script.async = true;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = function () {
+      reject(new Error('Failed to load Google Maps API'));
+    };
+    document.head.appendChild(script);
+  });
+}
 
 document.addEventListener('DOMContentLoaded', function () {
   allTrips = loadTrips();
@@ -24,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   renderTripHeader();
   renderSidebarPins();
-  renderMapPins();
   initSearch();
 
   document.getElementById('add-pin-btn').addEventListener('click', function () {
@@ -36,12 +51,38 @@ document.addEventListener('DOMContentLoaded', function () {
     openEditTripModal();
   });
 
-  document.getElementById('map-area').addEventListener('click', function (e) {
-    if (!e.target.closest('.map-pin') && !e.target.closest('.pin-info-card')) {
-      closePinInfo();
-    }
+  loadGoogleMaps().then(function () {
+    initMap();
+  }).catch(function (err) {
+    console.error(err);
+    document.getElementById('map-area').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9ca3af;font-size:0.95rem;">Could not load Google Maps</div>';
   });
 });
+
+function initMap() {
+  geocoder = new google.maps.Geocoder();
+
+  var mapOptions = {
+    zoom: 3,
+    center: { lat: 20, lng: 0 },
+    mapTypeControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+    styles: [
+      { featureType: 'poi', stylers: [{ visibility: 'simplified' }] },
+    ],
+  };
+
+  map = new google.maps.Map(document.getElementById('map-area'), mapOptions);
+
+  map.addListener('click', function () {
+    closePinInfo();
+  });
+
+  renderMapPins();
+}
 
 function renderTripHeader() {
   document.getElementById('trip-name').textContent = currentTrip.name;
@@ -110,30 +151,52 @@ function renderSidebarPins() {
 }
 
 function renderMapPins() {
-  const mapArea = document.getElementById('map-area');
+  mapMarkers.forEach(function (m) { m.setMap(null); });
+  mapMarkers = [];
 
-  mapArea.querySelectorAll('.map-pin').forEach(function (el) { el.remove(); });
+  if (!map) return;
+
+  var bounds = new google.maps.LatLngBounds();
+  var hasValidPins = false;
 
   currentTrip.pins.forEach(function (pin) {
-    const marker = document.createElement('div');
-    marker.className = 'map-pin';
-    marker.dataset.pinId = pin.id;
-    marker.style.left = pin.x + '%';
-    marker.style.top = pin.y + '%';
+    if (pin.lat == null || pin.lng == null) return;
 
-    marker.innerHTML = `
-      <div class="map-pin-marker">
-        ${SVG_ICONS.pin}
-      </div>
-    `;
+    hasValidPins = true;
+    var position = { lat: pin.lat, lng: pin.lng };
+    bounds.extend(position);
 
-    marker.addEventListener('click', function (e) {
-      e.stopPropagation();
+    var marker = new google.maps.Marker({
+      position: position,
+      map: map,
+      title: pin.name,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: '#ec4899',
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 3,
+      },
+    });
+
+    marker.pinId = pin.id;
+
+    marker.addListener('click', function () {
       showPinInfo(pin, marker);
     });
 
-    mapArea.appendChild(marker);
+    mapMarkers.push(marker);
   });
+
+  if (hasValidPins) {
+    if (currentTrip.pins.filter(function (p) { return p.lat != null; }).length === 1) {
+      map.setCenter(bounds.getCenter());
+      map.setZoom(12);
+    } else {
+      map.fitBounds(bounds, 60);
+    }
+  }
 }
 
 function deletePin(pinId) {
@@ -153,30 +216,17 @@ function deletePin(pinId) {
   );
 }
 
-function showPinInfo(pin, markerEl) {
+function showPinInfo(pin, marker) {
   closePinInfo();
 
-  const card = document.createElement('div');
+  if (!map || pin.lat == null) return;
+
+  var card = document.createElement('div');
   card.className = 'pin-info-card';
 
-  const pinX = parseFloat(markerEl.style.left);
-  const pinY = parseFloat(markerEl.style.top);
-
-  if (pinX > 60) {
-    card.style.right = (100 - pinX + 4) + '%';
-  } else {
-    card.style.left = (pinX + 4) + '%';
-  }
-
-  if (pinY > 60) {
-    card.style.bottom = (100 - pinY + 4) + '%';
-  } else {
-    card.style.top = (pinY + 4) + '%';
-  }
-
-  const votedClass = pin.voted ? ' btn-disabled' : '';
-  const heartIcon = pin.voted ? SVG_ICONS.heartFilled : SVG_ICONS.heart;
-  const commentCount = (pin.comments || []).length;
+  var votedClass = pin.voted ? ' btn-disabled' : '';
+  var heartIcon = pin.voted ? SVG_ICONS.heartFilled : SVG_ICONS.heart;
+  var commentCount = (pin.comments || []).length;
 
   card.innerHTML = `
     <div class="pin-info-card-header">
@@ -203,7 +253,7 @@ function showPinInfo(pin, markerEl) {
     deletePin(pin.id);
   });
 
-  const voteBtn = card.querySelector('#vote-btn');
+  var voteBtn = card.querySelector('#vote-btn');
   voteBtn.addEventListener('click', function () {
     if (pin.voted) return;
     pin.voted = true;
@@ -215,12 +265,35 @@ function showPinInfo(pin, markerEl) {
     renderSidebarPins();
   });
 
-  const commentBtn = card.querySelector('#comment-btn');
+  var commentBtn = card.querySelector('#comment-btn');
   commentBtn.addEventListener('click', function () {
     openCommentsModal(pin);
   });
 
-  document.getElementById('map-area').appendChild(card);
+  card.addEventListener('click', function (e) {
+    e.stopPropagation();
+  });
+
+  var overlay = new google.maps.OverlayView();
+  overlay.onAdd = function () {
+    var panes = this.getPanes();
+    panes.floatPane.appendChild(card);
+  };
+  overlay.draw = function () {
+    var projection = this.getProjection();
+    var pos = projection.fromLatLngToDivPixel(marker.getPosition());
+    card.style.left = (pos.x + 16) + 'px';
+    card.style.top = (pos.y - 80) + 'px';
+  };
+  overlay.onRemove = function () {
+    if (card.parentNode) {
+      card.parentNode.removeChild(card);
+    }
+  };
+  overlay.setMap(map);
+  activeInfoCard = overlay;
+
+  map.panTo(marker.getPosition());
 }
 
 function openCommentsModal(pin) {
@@ -332,21 +405,21 @@ function openConfirmModal(title, message, onConfirm) {
 }
 
 function closePinInfo() {
-  const existing = document.querySelector('.pin-info-card');
-  if (existing) existing.remove();
-}
-
-function highlightPin(pinId) {
-  const marker = document.querySelector('.map-pin[data-pin-id="' + pinId + '"]');
-  if (marker) {
-    const pin = currentTrip.pins.find(function (p) { return p.id === pinId; });
-    if (pin) {
-      showPinInfo(pin, marker);
-    }
+  if (activeInfoCard) {
+    activeInfoCard.setMap(null);
+    activeInfoCard = null;
   }
 }
 
-function openAddPinModal(prefillName) {
+function highlightPin(pinId) {
+  var pin = currentTrip.pins.find(function (p) { return p.id === pinId; });
+  var marker = mapMarkers.find(function (m) { return m.pinId === pinId; });
+  if (pin && marker) {
+    showPinInfo(pin, marker);
+  }
+}
+
+function openAddPinModal(prefillName, prefillLat, prefillLng) {
   const types = ['City', 'Restaurant', 'Landmark', 'Activity'];
 
   const typeButtonsHTML = types.map(function (type) {
@@ -372,12 +445,15 @@ function openAddPinModal(prefillName) {
   `;
 
   const footerHTML = `
+    <div id="pin-geocode-error" class="form-error" style="margin-bottom:12px"></div>
     <button type="button" class="btn btn-gradient-pink btn-full" id="submit-pin-btn">Add Pin to Map</button>
   `;
 
   const modal = openModal('Add New Pin', bodyHTML, footerHTML);
 
   let selectedType = 'City';
+  let savedLat = prefillLat || null;
+  let savedLng = prefillLng || null;
 
   const toggleBtns = modal.querySelectorAll('.type-toggle-btn');
   toggleBtns.forEach(function (btn) {
@@ -391,71 +467,115 @@ function openAddPinModal(prefillName) {
   modal.querySelector('#submit-pin-btn').addEventListener('click', function () {
     const name = modal.querySelector('#pin-name-input').value.trim();
     const comment = modal.querySelector('#pin-comment-input').value.trim();
+    const errorEl = modal.querySelector('#pin-geocode-error');
 
     if (!name) {
       modal.querySelector('#pin-name-input').focus();
       return;
     }
 
-    const comments = [];
-    if (comment) {
-      comments.push({ id: 1, text: comment, author: 'You' });
+    var submitBtn = modal.querySelector('#submit-pin-btn');
+    submitBtn.textContent = 'Locating...';
+    submitBtn.classList.add('btn-disabled');
+    errorEl.classList.remove('visible');
+
+    function createPin(lat, lng) {
+      var comments = [];
+      if (comment) {
+        comments.push({ id: 1, text: comment, author: 'You' });
+      }
+
+      var newPin = {
+        id: getNextId(currentTrip.pins),
+        name: name,
+        type: selectedType,
+        comment: comment,
+        comments: comments,
+        votes: 0,
+        voted: false,
+        lat: lat,
+        lng: lng,
+      };
+
+      currentTrip.pins.push(newPin);
+      saveTrips(allTrips);
+      renderSidebarPins();
+      renderMapPins();
+      closeModal();
     }
 
-    const newPin = {
-      id: getNextId(currentTrip.pins),
-      name: name,
-      type: selectedType,
-      comment: comment,
-      comments: comments,
-      votes: 0,
-      voted: false,
-      x: 20 + Math.random() * 60,
-      y: 20 + Math.random() * 60,
-    };
+    if (savedLat != null && savedLng != null) {
+      createPin(savedLat, savedLng);
+      return;
+    }
 
-    currentTrip.pins.push(newPin);
-    saveTrips(allTrips);
-    renderSidebarPins();
-    renderMapPins();
-    closeModal();
+    if (!geocoder) {
+      errorEl.textContent = 'Maps not loaded yet. Please try again.';
+      errorEl.classList.add('visible');
+      submitBtn.textContent = 'Add Pin to Map';
+      submitBtn.classList.remove('btn-disabled');
+      return;
+    }
+
+    geocoder.geocode({ address: name }, function (results, status) {
+      if (status === 'OK' && results[0]) {
+        var loc = results[0].geometry.location;
+        createPin(loc.lat(), loc.lng());
+      } else {
+        errorEl.textContent = 'Could not find that location. Try a more specific name.';
+        errorEl.classList.add('visible');
+        submitBtn.textContent = 'Add Pin to Map';
+        submitBtn.classList.remove('btn-disabled');
+      }
+    });
   });
 }
+
+var searchDebounce = null;
 
 function initSearch() {
   const input = document.getElementById('search-input');
   const dropdown = document.getElementById('search-dropdown');
 
   input.addEventListener('input', function () {
-    const query = input.value.trim().toLowerCase();
+    const query = input.value.trim();
 
     if (!query) {
       dropdown.classList.remove('visible');
       return;
     }
 
-    const matches = SEARCH_SUGGESTIONS.filter(function (s) {
-      return s.toLowerCase().includes(query);
-    });
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(function () {
+      if (!geocoder) return;
 
-    if (matches.length === 0) {
-      dropdown.classList.remove('visible');
-      return;
-    }
+      geocoder.geocode({ address: query }, function (results, status) {
+        if (input.value.trim() !== query) return;
 
-    dropdown.innerHTML = matches.map(function (s) {
-      return '<div class="search-suggestion">' + s + '</div>';
-    }).join('');
+        if (status !== 'OK' || !results || results.length === 0) {
+          dropdown.classList.remove('visible');
+          return;
+        }
 
-    dropdown.classList.add('visible');
+        var items = results.slice(0, 5);
+        dropdown.innerHTML = items.map(function (r) {
+          return '<div class="search-suggestion" data-lat="' + r.geometry.location.lat() + '" data-lng="' + r.geometry.location.lng() + '">'
+            + r.formatted_address + '</div>';
+        }).join('');
 
-    dropdown.querySelectorAll('.search-suggestion').forEach(function (el) {
-      el.addEventListener('click', function () {
-        input.value = '';
-        dropdown.classList.remove('visible');
-        openAddPinModal(el.textContent);
+        dropdown.classList.add('visible');
+
+        dropdown.querySelectorAll('.search-suggestion').forEach(function (el) {
+          el.addEventListener('click', function () {
+            var lat = parseFloat(el.dataset.lat);
+            var lng = parseFloat(el.dataset.lng);
+            input.value = '';
+            dropdown.classList.remove('visible');
+            openAddPinModal(el.textContent, lat, lng);
+          });
+        });
       });
-    });
+    }, 400);
   });
 
   input.addEventListener('blur', function () {
