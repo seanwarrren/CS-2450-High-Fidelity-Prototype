@@ -30,33 +30,6 @@ function initTabs() {
   });
 }
 
-function fetchUnsplashImage(trip, cardElement, allTrips) {
-  if (typeof UNSPLASH_ACCESS_KEY === 'undefined' || UNSPLASH_ACCESS_KEY === 'YOUR_UNSPLASH_ACCESS_KEY_HERE') {
-    return;
-  }
-  var query = encodeURIComponent(trip.name);
-  fetch('https://api.unsplash.com/search/photos?query=' + query + '&per_page=1&orientation=landscape', {
-    headers: { 'Authorization': 'Client-ID ' + UNSPLASH_ACCESS_KEY }
-  })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      if (data.results && data.results.length > 0) {
-        var url = data.results[0].urls.small;
-        trip.image = url;
-        saveTrips(allTrips);
-        var topDiv = cardElement.querySelector('.trip-card-top');
-        topDiv.style.backgroundColor = '';
-        topDiv.innerHTML = '<img src="' + url + '" alt="' + trip.name + '">' +
-          '<button class="trip-delete-btn" title="Delete trip">' + SVG_ICONS.trash + '</button>';
-        topDiv.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
-          e.stopPropagation();
-          openDeleteTripModal(allTrips, trip);
-        });
-      }
-    })
-    .catch(function () {});
-}
-
 function categorizeTripByDate(trip) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -133,10 +106,6 @@ function createTripCard(trip, index, allTrips) {
     </div>
   `;
 
-  if (!trip.image) {
-    fetchUnsplashImage(trip, card, allTrips);
-  }
-
   card.querySelector('.trip-delete-btn').addEventListener('click', function (e) {
     e.stopPropagation();
     openDeleteTripModal(allTrips, trip);
@@ -193,8 +162,9 @@ function openCreateTripModal(trips) {
         <input type="text" class="form-input" id="trip-name-input" placeholder="e.g., Barcelona Trip" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Cover Image URL</label>
-        <input type="url" class="form-input" id="trip-image-input" placeholder="Paste an image URL (optional)">
+        <label class="form-label">Cover Image URL (optional)</label>
+        <input type="url" class="form-input" id="trip-image-input" placeholder="https://example.com/photo.jpg">
+        <div class="image-preview" id="image-preview"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
@@ -226,6 +196,34 @@ function openCreateTripModal(trips) {
   `;
 
   const modal = openModal('Create New Trip', bodyHTML, footerHTML);
+
+  var imageInput = modal.querySelector('#trip-image-input');
+  var imagePreview = modal.querySelector('#image-preview');
+  var debounceTimer;
+
+  imageInput.addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    var url = imageInput.value.trim();
+    if (!url) {
+      imagePreview.innerHTML = '';
+      imagePreview.classList.remove('has-image');
+      return;
+    }
+    debounceTimer = setTimeout(function () {
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Cover preview';
+      img.onload = function () {
+        imagePreview.innerHTML = '';
+        imagePreview.appendChild(img);
+        imagePreview.classList.add('has-image');
+      };
+      img.onerror = function () {
+        imagePreview.innerHTML = '<span class="image-preview-error">Could not load image</span>';
+        imagePreview.classList.remove('has-image');
+      };
+    }, 400);
+  });
 
   const items = modal.querySelectorAll('.friend-select-item');
   items.forEach(function (item) {
