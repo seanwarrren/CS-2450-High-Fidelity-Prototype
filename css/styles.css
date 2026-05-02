@@ -1004,11 +1004,55 @@ textarea.form-input {
   cursor: pointer;
   transition: background 0.15s;
   color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .search-suggestion:hover {
   background: #faf5ff;
+}
+
+.search-suggestion:hover .suggestion-name {
   color: #7c3aed;
+}
+
+.suggestion-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestion-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #9ca3af;
+}
+
+.suggestion-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-address {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ========== Pinned Locations List ========== */

@@ -2,6 +2,8 @@ let currentTrip = null;
 let allTrips = [];
 let map = null;
 let geocoder = null;
+let autocompleteService = null;
+let placesService = null;
 let mapMarkers = [];
 let activeInfoCard = null;
 
@@ -13,7 +15,7 @@ function loadGoogleMaps() {
     }
 
     var script = document.createElement('script');
-    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&libraries=geocoding';
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_MAPS_API_KEY + '&libraries=geocoding,places';
     script.async = true;
     script.defer = true;
     script.onload = resolve;
@@ -62,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function initMap() {
   geocoder = new google.maps.Geocoder();
+  autocompleteService = new google.maps.places.AutocompleteService();
 
   var mapOptions = {
     zoom: 3,
@@ -76,6 +79,7 @@ function initMap() {
   };
 
   map = new google.maps.Map(document.getElementById('map-area'), mapOptions);
+  placesService = new google.maps.places.PlacesService(map);
 
   map.addListener('click', function () {
     closePinInfo();
@@ -473,6 +477,9 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
 
   pinNameInput.addEventListener('input', function () {
     var query = pinNameInput.value.trim();
+    savedLat = null;
+    savedLng = null;
+
     if (!query || query.length < 2) {
       pinNameDropdown.classList.remove('visible');
       return;
@@ -480,35 +487,34 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
 
     clearTimeout(pinSearchTimer);
     pinSearchTimer = setTimeout(function () {
-      if (!geocoder) return;
+      if (!autocompleteService) return;
 
-      geocoder.geocode({ address: query }, function (results, status) {
+      autocompleteService.getPlacePredictions({ input: query }, function (predictions, status) {
         if (pinNameInput.value.trim() !== query) return;
 
-        if (status !== 'OK' || !results || results.length === 0) {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || predictions.length === 0) {
           pinNameDropdown.classList.remove('visible');
           return;
         }
 
-        var items = results.slice(0, 5);
-        pinNameDropdown.innerHTML = items.map(function (r) {
-          return '<div class="search-suggestion" data-lat="' + r.geometry.location.lat() + '" data-lng="' + r.geometry.location.lng() + '">'
-            + r.formatted_address + '</div>';
-        }).join('');
-
+        pinNameDropdown.innerHTML = predictions.slice(0, 5).map(buildPlaceSuggestionHTML).join('');
         pinNameDropdown.classList.add('visible');
 
         pinNameDropdown.querySelectorAll('.search-suggestion').forEach(function (el) {
           el.addEventListener('mousedown', function (e) {
             e.preventDefault();
-            pinNameInput.value = el.textContent;
-            savedLat = parseFloat(el.dataset.lat);
-            savedLng = parseFloat(el.dataset.lng);
+            var name = el.querySelector('.suggestion-name').textContent;
+            var placeId = el.dataset.placeId;
+            pinNameInput.value = name;
             pinNameDropdown.classList.remove('visible');
+            getPlaceLatLng(placeId, function (lat, lng) {
+              savedLat = lat;
+              savedLng = lng;
+            });
           });
         });
       });
-    }, 400);
+    }, 300);
   });
 
   pinNameInput.addEventListener('blur', function () {
@@ -586,6 +592,27 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
 
 var searchDebounce = null;
 
+function buildPlaceSuggestionHTML(prediction) {
+  var mainText = prediction.structured_formatting.main_text;
+  var secondaryText = prediction.structured_formatting.secondary_text || '';
+  return '<div class="search-suggestion" data-place-id="' + prediction.place_id + '">'
+    + '<span class="suggestion-icon">' + SVG_ICONS.pin + '</span>'
+    + '<span class="suggestion-text">'
+    + '<span class="suggestion-name">' + mainText + '</span>'
+    + (secondaryText ? '<span class="suggestion-address">' + secondaryText + '</span>' : '')
+    + '</span>'
+    + '</div>';
+}
+
+function getPlaceLatLng(placeId, callback) {
+  if (!placesService) return;
+  placesService.getDetails({ placeId: placeId, fields: ['geometry'] }, function (place, status) {
+    if (status === google.maps.places.PlacesServiceStatus.OK && place && place.geometry) {
+      callback(place.geometry.location.lat(), place.geometry.location.lng());
+    }
+  });
+}
+
 function initSearch() {
   const input = document.getElementById('search-input');
   const dropdown = document.getElementById('search-dropdown');
@@ -600,35 +627,32 @@ function initSearch() {
 
     clearTimeout(searchDebounce);
     searchDebounce = setTimeout(function () {
-      if (!geocoder) return;
+      if (!autocompleteService) return;
 
-      geocoder.geocode({ address: query }, function (results, status) {
+      autocompleteService.getPlacePredictions({ input: query }, function (predictions, status) {
         if (input.value.trim() !== query) return;
 
-        if (status !== 'OK' || !results || results.length === 0) {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || predictions.length === 0) {
           dropdown.classList.remove('visible');
           return;
         }
 
-        var items = results.slice(0, 5);
-        dropdown.innerHTML = items.map(function (r) {
-          return '<div class="search-suggestion" data-lat="' + r.geometry.location.lat() + '" data-lng="' + r.geometry.location.lng() + '">'
-            + r.formatted_address + '</div>';
-        }).join('');
-
+        dropdown.innerHTML = predictions.slice(0, 5).map(buildPlaceSuggestionHTML).join('');
         dropdown.classList.add('visible');
 
         dropdown.querySelectorAll('.search-suggestion').forEach(function (el) {
           el.addEventListener('click', function () {
-            var lat = parseFloat(el.dataset.lat);
-            var lng = parseFloat(el.dataset.lng);
+            var placeId = el.dataset.placeId;
+            var name = el.querySelector('.suggestion-name').textContent;
             input.value = '';
             dropdown.classList.remove('visible');
-            openAddPinModal(el.textContent, lat, lng);
+            getPlaceLatLng(placeId, function (lat, lng) {
+              openAddPinModal(name, lat, lng);
+            });
           });
         });
       });
-    }, 400);
+    }, 300);
   });
 
   input.addEventListener('blur', function () {
