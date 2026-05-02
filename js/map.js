@@ -431,7 +431,10 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
     <form id="add-pin-form">
       <div class="form-group">
         <label class="form-label">Location Name</label>
-        <input type="text" class="form-input" id="pin-name-input" placeholder="e.g., San Jose, CA" value="${prefillName || ''}" required>
+        <div class="modal-search-wrapper">
+          <input type="text" class="form-input" id="pin-name-input" placeholder="e.g., San Jose, CA" value="${prefillName || ''}" required autocomplete="off">
+          <div class="search-dropdown" id="pin-name-dropdown"></div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Location Type</label>
@@ -462,6 +465,56 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
       btn.classList.add('active');
       selectedType = btn.dataset.type;
     });
+  });
+
+  var pinNameInput = modal.querySelector('#pin-name-input');
+  var pinNameDropdown = modal.querySelector('#pin-name-dropdown');
+  var pinSearchTimer = null;
+
+  pinNameInput.addEventListener('input', function () {
+    var query = pinNameInput.value.trim();
+    if (!query || query.length < 2) {
+      pinNameDropdown.classList.remove('visible');
+      return;
+    }
+
+    clearTimeout(pinSearchTimer);
+    pinSearchTimer = setTimeout(function () {
+      if (!geocoder) return;
+
+      geocoder.geocode({ address: query }, function (results, status) {
+        if (pinNameInput.value.trim() !== query) return;
+
+        if (status !== 'OK' || !results || results.length === 0) {
+          pinNameDropdown.classList.remove('visible');
+          return;
+        }
+
+        var items = results.slice(0, 5);
+        pinNameDropdown.innerHTML = items.map(function (r) {
+          return '<div class="search-suggestion" data-lat="' + r.geometry.location.lat() + '" data-lng="' + r.geometry.location.lng() + '">'
+            + r.formatted_address + '</div>';
+        }).join('');
+
+        pinNameDropdown.classList.add('visible');
+
+        pinNameDropdown.querySelectorAll('.search-suggestion').forEach(function (el) {
+          el.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            pinNameInput.value = el.textContent;
+            savedLat = parseFloat(el.dataset.lat);
+            savedLng = parseFloat(el.dataset.lng);
+            pinNameDropdown.classList.remove('visible');
+          });
+        });
+      });
+    }, 400);
+  });
+
+  pinNameInput.addEventListener('blur', function () {
+    setTimeout(function () {
+      pinNameDropdown.classList.remove('visible');
+    }, 200);
   });
 
   modal.querySelector('#submit-pin-btn').addEventListener('click', function () {

@@ -942,6 +942,14 @@ textarea.form-input {
   margin-bottom: 20px;
 }
 
+.modal-search-wrapper {
+  position: relative;
+}
+
+.modal-search-wrapper .search-dropdown {
+  z-index: 1100;
+}
+
 .search-input {
   width: 100%;
   padding: 10px 14px 10px 38px;
