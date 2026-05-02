@@ -489,7 +489,11 @@ function openAddPinModal(prefillName, prefillLat, prefillLng) {
     pinSearchTimer = setTimeout(function () {
       if (!autocompleteService) return;
 
-      autocompleteService.getPlacePredictions({ input: query }, function (predictions, status) {
+      var pinRequestOpts = { input: query };
+      if (map && map.getBounds()) {
+        pinRequestOpts.locationBias = map.getBounds();
+      }
+      autocompleteService.getPlacePredictions(pinRequestOpts, function (predictions, status) {
         if (pinNameInput.value.trim() !== query) return;
 
         if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || predictions.length === 0) {
@@ -629,7 +633,11 @@ function initSearch() {
     searchDebounce = setTimeout(function () {
       if (!autocompleteService) return;
 
-      autocompleteService.getPlacePredictions({ input: query }, function (predictions, status) {
+      var requestOpts = { input: query };
+      if (map && map.getBounds()) {
+        requestOpts.locationBias = map.getBounds();
+      }
+      autocompleteService.getPlacePredictions(requestOpts, function (predictions, status) {
         if (input.value.trim() !== query) return;
 
         if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || predictions.length === 0) {
